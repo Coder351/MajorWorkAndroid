@@ -34,6 +34,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -53,7 +54,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-
+//TODO: ensure that if permissions not present, appropriate screen shown after permissions entered
 public class MainActivity extends AppCompatActivity
 {
 
@@ -91,6 +92,8 @@ public class MainActivity extends AppCompatActivity
     Button getpicture;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_PERMISSIONS = 200;
+
+    private ImageView selectorView;
 
     static
     {
@@ -193,7 +196,6 @@ public class MainActivity extends AppCompatActivity
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
-
         textureView = (TextureView) findViewById(R.id.textureview);
         textureView.setSurfaceTextureListener(surfaceTextureListener);
         getpicture = (Button) findViewById(R.id.getpicture);
@@ -205,7 +207,7 @@ public class MainActivity extends AppCompatActivity
                 getPicture();
             }
         });
-
+        selectorView = (ImageView) findViewById(R.id.selectorView);
 
     }
 
@@ -471,10 +473,27 @@ public class MainActivity extends AppCompatActivity
         options.inSampleSize = 1;
 //        bitmap = BitmapFactory.decodeByteArray(bytes,0,bytes.length,options);
         Bitmap bmp = BitmapFactory.decodeFile(imagePath, options);
+
 //        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.example3, options);
+
         Matrix matrix = new Matrix();//rotates it
         matrix.postRotate(90);//^^^^^
-        bitmap = bmp.createBitmap(bmp,0,0,900,900,matrix,true);
+        Bitmap rotatedBmp = Bitmap.createBitmap(bmp,0,0,bmp.getWidth(),bmp.getHeight(),matrix,true);
+
+
+        int x,y,w,h,b;
+        x=selectorView.getLeft();
+        y= selectorView.getTop();
+        b= selectorView.getBottom();
+
+        w=selectorView.getWidth();
+        h=selectorView.getHeight();
+        x=y=0;
+        w=h=100;
+        bitmap = bmp.createBitmap(rotatedBmp,x,y,w,h);
+
+
+
         Utils.bitmapToMat(bitmap, img);
 
         Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
