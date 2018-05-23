@@ -4,40 +4,13 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.ImageFormat;
-import android.graphics.Matrix;
-import android.graphics.Rect;
-import android.graphics.Region;
-import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.Image;
-import android.media.ImageReader;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.HandlerThread;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
-import android.util.SparseIntArray;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -48,31 +21,26 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.RotatedRect;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.core.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 
 //TODO: ensure that if permissions not present, appropriate screen shown after permissions entered
 public class MainActivity extends AppCompatActivity
 {
 
     public Mat img;
-    Bitmap bitmap;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
@@ -96,28 +64,13 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
-    private android.util.Size previewsize;
-    private android.util.Size jpegSizes[] = null;
-    private TextureView textureView;
-    private CameraDevice cameraDevice;
-    private CaptureRequest.Builder previewBuilder;
-    private CameraCaptureSession previewSession;
     Button button_capture;
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_PERMISSIONS = 200;
 
     private ImageView selectorView;
     private Camera camera;
     private CameraPreview preview;
     private FrameLayout previewFrame;
-
-    static
-    {
-        ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
 
 
 
@@ -219,11 +172,10 @@ public class MainActivity extends AppCompatActivity
 //    protected void onResume()
 //    {
 //        super.onResume();
-//        if (preview.getParent() != previewFrame)
+//        if (camera == null)
 //        {
 //            camera = getCameraInstance(getApplicationContext());
 //            CameraPreview.setCameraDisplayOrientation(this, Camera.CameraInfo.CAMERA_FACING_BACK, camera);
-//            previewFrame.addView(preview);
 //        }
 //    }
 
