@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -16,6 +17,8 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.googlecode.tesseract.android.TessBaseAPI;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -33,6 +36,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -41,6 +46,8 @@ public class MainActivity extends AppCompatActivity
 {
 
     public Mat img;
+    private final String TESS_DATA_PATH ="/tessdata";
+    private TessBaseAPI tessBaseAPI;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
@@ -64,6 +71,41 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    private Camera.PictureCallback pictureCallback = new Camera.PictureCallback()
+    {
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera)
+        {
+            File pictureFile = getOutputMediaFile();
+            long x = pictureFile.length();
+            if (pictureFile == null)
+            {
+                Log.d("TAG", "Error creating media file, check storage permissions: ");
+                return;
+            }
+
+            try
+            {
+                FileOutputStream fos = new FileOutputStream(pictureFile);
+                fos.write(data);
+                fos.close();
+            }
+            catch (FileNotFoundException e)
+            {
+                Log.d("TAG", "File not found: " + e.getMessage());
+            }
+            catch (IOException e)
+            {
+                Log.d("TAG", "Error accessing file: " + e.getMessage());
+            }
+
+            Bitmap bmp = Tools.getCroppedBitmap(pictureFile.getAbsolutePath(), preview.getWidth(), preview.getHeight(), Tools.getBox(selectorView));
+            ExtractText(bmp);
+
+            Log.d("TAG", "IMAGE LOADED");
+        }
+    };
+
     Button button_capture;
     private static final int REQUEST_PERMISSIONS = 200;
 
@@ -71,7 +113,6 @@ public class MainActivity extends AppCompatActivity
     private Camera camera;
     private CameraPreview preview;
     private FrameLayout previewFrame;
-
 
 
     @Override
@@ -124,6 +165,8 @@ public class MainActivity extends AppCompatActivity
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
+
+        prepareTessData();
 
         selectorView = (ImageView) findViewById(R.id.selectorView);
 
@@ -211,41 +254,6 @@ public class MainActivity extends AppCompatActivity
         return cam; // returns null if camera is unavailable
     }
 
-    private Camera.PictureCallback pictureCallback = new Camera.PictureCallback()
-    {
-        @Override
-        public void onPictureTaken(byte[] data, Camera camera)
-        {
-            File pictureFile = getOutputMediaFile();
-            long x = pictureFile.length();
-            if (pictureFile == null)
-            {
-                Log.d("TAG", "Error creating media file, check storage permissions: ");
-                return;
-            }
-
-            try
-            {
-                FileOutputStream fos = new FileOutputStream(pictureFile);
-                fos.write(data);
-                fos.close();
-            }
-            catch (FileNotFoundException e)
-            {
-                Log.d("TAG", "File not found: " + e.getMessage());
-            }
-            catch (IOException e)
-            {
-                Log.d("TAG", "Error accessing file: " + e.getMessage());
-            }
-
-            Bitmap bmp = Tools.getCroppedBitmap(pictureFile.getAbsolutePath(), preview.getWidth(), preview.getHeight(), Tools.getBox(selectorView));
-            ExtractText(bmp);
-
-            Log.d("TAG", "IMAGE LOADED");
-        }
-    };
-
     private File getOutputMediaFile()
     {
         File mediaStorageDir = new File(getFilesDir(), getString(R.string.app_name));
@@ -271,9 +279,11 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private void ExtractText(Bitmap bitmap)
+    public void ExtractText(Bitmap bitmap)
     {
-//        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.example3, options);
+//        BitmapFactory.Options options = new BitmapFactory.Options();
+//        options.inSampleSize =1;
+//        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.example1, options);
 //        bitmap = Tools.rotateBitmap(bitmap,90);
 
         Utils.bitmapToMat(bitmap, img);
@@ -281,7 +291,8 @@ public class MainActivity extends AppCompatActivity
         Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
         Imgproc.GaussianBlur(img, img, new Size(3, 3), 0);
         Imgproc.adaptiveThreshold(img, img, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 55, 10);
-
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE,new Size(2,2));
+        Imgproc.morphologyEx(img,img, Imgproc.MORPH_ERODE,kernel);
         Mat croppedImg = RotateAndCrop(img);
         bitmap = Bitmap.createBitmap(croppedImg.cols(), croppedImg.rows(), Bitmap.Config.ARGB_8888);
 
@@ -289,7 +300,8 @@ public class MainActivity extends AppCompatActivity
 
         Utils.matToBitmap(croppedImg, bitmap);
         selectorView.setImageBitmap(bitmap);
-        Log.d("TAG", "GD");
+        button_capture.setText(detectText(bitmap));
+
     }
 
     private Mat RotateAndCrop(@NonNull Mat src)
@@ -322,6 +334,79 @@ public class MainActivity extends AppCompatActivity
         Imgproc.getRectSubPix(rotated, croppedSize, rect.center, cropped);
         return cropped;
     }
+
+    private void prepareTessData()
+    {
+
+        try
+        {
+            File dir = new File(getFilesDir().toString() + TESS_DATA_PATH);
+            if (!dir.exists())
+            {
+                dir.mkdir();
+            }
+            String fileList[] = getAssets().list("");
+            for (String fileName : fileList)
+            {
+                String pathToDataFile = getFilesDir() + TESS_DATA_PATH + "/" + fileName;
+                if (!(new File(pathToDataFile)).exists())
+                {
+                    InputStream is = getAssets().open(fileName);
+                    OutputStream os = new FileOutputStream(pathToDataFile);
+                    byte[] buff = new byte[1024];
+                    int len;
+                    while ((len = is.read(buff)) > 0)
+                    {
+                        os.write(buff, 0, len);
+                    }
+                    is.close();
+                    os.close();
+                }
+            }
+        }
+
+        catch (IOException e)
+        {
+            e.printStackTrace();
+
+        }
+
+        try
+        {
+            tessBaseAPI = new TessBaseAPI();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+
+        tessBaseAPI.setPageSegMode(TessBaseAPI.OEM_TESSERACT_ONLY);//Change to Tesseract_cube_maybe Slower but more accurate
+        tessBaseAPI.setDebug(true);
+
+    }
+
+
+
+    private String detectText(Bitmap bitmap)
+    {
+        try
+        {
+            tessBaseAPI.init(getFilesDir().toString(),"eng");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        tessBaseAPI.setImage(bitmap);
+        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789+=-/x*");
+        String extractedText = tessBaseAPI.getUTF8Text();
+
+        tessBaseAPI.end();
+        return extractedText;
+
+    }
+
 
 }
 
