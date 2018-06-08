@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity
     public Mat img;
     private final String TESS_DATA_PATH ="/tessdata";
     private TessBaseAPI tessBaseAPI;
+    private FocusBox focusBox;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
@@ -137,7 +139,6 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_camera);
-
         if (!OpenCVLoader.initDebug())
         {
             Log.d("OpenCV", "Internal OpenCV library not found. Using OpenCV Manager for Initialization");
@@ -167,16 +168,15 @@ public class MainActivity extends AppCompatActivity
         }
 
         prepareTessData();
-
         selectorView = (ImageView) findViewById(R.id.selectorView);
-
+        focusBox = new FocusBox(getApplicationContext(),selectorView);
         camera = getCameraInstance(getApplicationContext());
 
         preview = new CameraPreview(this, camera, this);
         preview.initFocus(Tools.getBox(selectorView));
         previewFrame = (FrameLayout) findViewById(R.id.cameraPreviewFrame);
         previewFrame.addView(preview);
-
+        previewFrame.addView(focusBox);
 //
 //        textureView = (TextureView) findViewById(R.id.textureview);
 //        textureView.setSurfaceTextureListener(surfaceTextureListener);
