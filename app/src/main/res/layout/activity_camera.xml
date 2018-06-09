@@ -25,7 +25,7 @@
         android:id="@+id/selectorView"
         android:layout_width="400px"
         android:layout_height="400px"
-        android:layout_centerInParent="true"
-        app:srcCompat="@mipmap/focus_box_image" />
+        android:layout_centerInParent="true"/>
+        <!--app:srcCompat="@mipmap/focus_box_image"-->
 
 </RelativeLayout>
