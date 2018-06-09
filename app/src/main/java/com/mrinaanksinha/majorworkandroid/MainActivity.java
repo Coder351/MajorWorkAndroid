@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity
     private final String TESS_DATA_PATH ="/tessdata";
     private TessBaseAPI tessBaseAPI;
     private FocusBox focusBox;
+
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
@@ -115,7 +117,6 @@ public class MainActivity extends AppCompatActivity
     private Camera camera;
     private CameraPreview preview;
     private FrameLayout previewFrame;
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
@@ -192,14 +193,6 @@ public class MainActivity extends AppCompatActivity
         });
 
 
-        selectorView.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                preview.focusCamera();
-            }
-        });
 
 
     }
@@ -226,6 +219,7 @@ public class MainActivity extends AppCompatActivity
     {
         if (camera != null)
         {
+            preview.removeFocusCallback();
             camera.release();
             camera = null;
         }

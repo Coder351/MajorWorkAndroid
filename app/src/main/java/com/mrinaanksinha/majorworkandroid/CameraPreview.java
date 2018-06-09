@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.Camera;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.Surface;
@@ -25,6 +26,18 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 {
     private SurfaceHolder holder;
     private Camera camera;
+
+
+    public Handler focusHandler = new Handler();
+
+    private Runnable focusCameraRunnable = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            focusCamera();
+        }
+    };
 
     public CameraPreview(Context context, Camera camera, Activity parent)
     {
@@ -52,6 +65,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         {
             camera.setPreviewDisplay(holder);
             camera.startPreview();
+            focusHandler.post(focusCameraRunnable);
         }
         catch (IOException e)
         {
@@ -181,10 +195,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void initFocus(Rect box)
     {
         Camera.Parameters parameters = camera.getParameters();
-        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         List<Camera.Area> areas = new ArrayList<>();
         areas.add(new Camera.Area(box, 1000));
-//        parameters.setFocusAreas(areas);
+        parameters.setFocusAreas(areas);
         camera.setParameters(parameters);
     }
 
@@ -193,10 +207,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         @Override
         public void onAutoFocus(boolean success, Camera camera)
         {
-            if (success)
-            {
                 camera.cancelAutoFocus();
-            }
         }
 
     };
@@ -206,4 +217,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         camera.autoFocus(autoFocusCallback);
     }
 
+    public void removeFocusCallback() //Encapsulation FTW
+    {
+        focusHandler.removeCallbacks(focusCameraRunnable);
+    }
 }
