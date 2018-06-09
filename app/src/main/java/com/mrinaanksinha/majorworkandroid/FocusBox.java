@@ -2,6 +2,7 @@ package com.mrinaanksinha.majorworkandroid;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
@@ -9,7 +10,7 @@ import android.widget.ImageView;
 
 public class FocusBox extends View
 {
-    private final int maskColor;
+    private final int maskColor = Color.argb(88,0,0,0);
     private final Paint paint;
     private final ImageView selectorView;
 
@@ -19,7 +20,6 @@ public class FocusBox extends View
         super(context);
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         selectorView = _selectorView;
-        maskColor = R.color.maskColor;
 
         this.setOnTouchListener(TouchListener);
 
