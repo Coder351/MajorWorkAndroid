@@ -9,6 +9,7 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 public class FocusBox extends View
 {
@@ -17,7 +18,6 @@ public class FocusBox extends View
     private final float RECTANGLE_THICKNESS = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
     private Paint paint;
     private ImageView selectorView;
-
 
     public FocusBox(Context context, ImageView _selectorView)
     {
@@ -41,6 +41,12 @@ public class FocusBox extends View
         public boolean onTouch(View v, MotionEvent event)
         {
             Log.d(">>>>>>>>>>>", Integer.toString(event.getAction()));
+//            vvvvvvvvvvvvvvvv Repeats too many times for a single offense
+//            if (event.getPointerCount()>1)
+//            {
+//                Toast.makeText(getContext(),"Please use a single finger to resize",Toast.LENGTH_SHORT).show();
+//            }
+
             switch (event.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
