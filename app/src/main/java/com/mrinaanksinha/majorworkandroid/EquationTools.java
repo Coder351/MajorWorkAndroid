@@ -38,12 +38,7 @@ public class EquationTools
         return "+-/*x^".contains(testChar);
     }
 
-    private static boolean isOneMath(char c)
-    {
-        char operator[] = {'s', 'c', 't', '@', '('}; //~ is instance of negative TODO:<--- change entire finction to just LParenthesis
-        Arrays.sort(operator);
-        return Arrays.binarySearch(operator, c) > -1;
-    }
+
 
     private static boolean isNum(String element)
     {    // check char is Number (Pi is number too)
@@ -112,7 +107,7 @@ public class EquationTools
 
         for (int i = 0; i < rawEquation.length(); i++)
         {
-            if (i > 0 && isOneMath(rawEquation.charAt(i)) && (rawEquation.charAt(i - 1) == ')' || isNum(Character.toString(rawEquation.charAt(i - 1)))))
+            if (i > 0 && isLParenthesis(Character.toString(rawEquation.charAt(i))) && (rawEquation.charAt(i - 1) == ')' || isNum(Character.toString(rawEquation.charAt(i - 1)))))
             {
                 builder.append("* "); //	fix ...)(... to ...)*(...
             }
@@ -149,6 +144,7 @@ public class EquationTools
             case "-":
                 return 1;
             case "*":
+            case "x":
             case "/":
                 return 2;
             case "^":
@@ -254,6 +250,7 @@ public class EquationTools
                         stack.push(num1 - num2);
                         break;
                     case "*":
+                    case "x":
                         stack.push(num1 * num2);
                         break;
                     case "/":
