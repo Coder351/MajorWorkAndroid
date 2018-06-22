@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class Tools
+public class ImageProcessingTools
 {
     //TODO: Check if these sizes are correct
     private static int MIN_PREVIEW_PIXELS = 470 * 320;
@@ -190,13 +190,13 @@ public class Tools
 //        int X = (int) (k * CW);
 //        int Y = (int) (k * CH);
 //
-//        Bitmap unscaledBitmap = Tools.decodeByteArray(data, X, Y, Tools.ScalingLogic.CROP);
-//        Bitmap bmp = Tools.createScaledBitmap(unscaledBitmap, X, Y, Tools.ScalingLogic.CROP);
+//        Bitmap unscaledBitmap = ImageProcessingTools.decodeByteArray(data, X, Y, ImageProcessingTools.ScalingLogic.CROP);
+//        Bitmap bmp = ImageProcessingTools.createScaledBitmap(unscaledBitmap, X, Y, ImageProcessingTools.ScalingLogic.CROP);
 //        unscaledBitmap.recycle();
 //
 //        if (CW > CH)
 //        {
-//            bmp = Tools.rotateBitmap(bmp, 90);
+//            bmp = ImageProcessingTools.rotateBitmap(bmp, 90);
 //        }
 //
 //        int BW = bmp.getWidth();
@@ -312,9 +312,7 @@ public class Tools
 //
 
 
-        Rect rect = new Rect(view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
-
-        return rect;
+        return new Rect(view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
     }
 
 

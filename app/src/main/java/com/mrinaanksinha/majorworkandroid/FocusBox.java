@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
@@ -214,6 +215,10 @@ public class FocusBox extends View
 
     }
 
+    public Rect getSelectorViewBox()
+    {
+        return ImageProcessingTools.getBox(selectorView);
+    }
 
     @Override
     protected void onDraw(Canvas canvas)

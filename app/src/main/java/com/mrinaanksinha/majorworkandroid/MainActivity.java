@@ -7,11 +7,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -30,6 +28,7 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Rect;
 import org.opencv.core.RotatedRect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -41,7 +40,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 //TODO: ensure that if permissions not present, appropriate screen shown after permissions entered
 public class MainActivity extends AppCompatActivity
@@ -103,7 +104,7 @@ public class MainActivity extends AppCompatActivity
                 Log.d("TAG", "Error accessing file: " + e.getMessage());
             }
 
-            Bitmap bmp = Tools.getCroppedBitmap(pictureFile.getAbsolutePath(), preview.getWidth(), preview.getHeight(), Tools.getBox(selectorView));
+            Bitmap bmp = ImageProcessingTools.getCroppedBitmap(pictureFile.getAbsolutePath(), preview.getWidth(), preview.getHeight(), focusBox.getSelectorViewBox());
             ExtractText(bmp);
 
             Log.d("TAG", "IMAGE LOADED");
@@ -174,7 +175,7 @@ public class MainActivity extends AppCompatActivity
         camera = getCameraInstance(getApplicationContext());
 
         preview = new CameraPreview(this, camera, this);
-        preview.initFocus(Tools.getBox(selectorView));
+        preview.initFocus(ImageProcessingTools.getBox(selectorView));
         previewFrame = (FrameLayout) findViewById(R.id.cameraPreviewFrame);
         previewFrame.addView(preview);
         previewFrame.addView(focusBox);
@@ -275,10 +276,26 @@ public class MainActivity extends AppCompatActivity
 
     public void ExtractText(Bitmap bitmap)
     {
-//        BitmapFactory.Options options = new BitmapFactory.Options();
+        bitmap = preprocess(bitmap);
+
+        String detectedTextBoxes = detectText(bitmap);
+
+        String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes,new android.util.Size(bitmap.getWidth(),bitmap.getHeight()));
+        ArrayList<String> postfixEquation = EquationTools.infixToPostfix(infixEquation);
+        String equationSolution = EquationTools.solvePostfix(postfixEquation);
+        String formattedEquationWSolution = infixEquation + " = " + equationSolution;
+
+        button_capture.setText(formattedEquationWSolution);
+
+
+    }
+
+    private Bitmap preprocess(Bitmap bitmap)
+    {
+        //        BitmapFactory.Options options = new BitmapFactory.Options();
 //        options.inSampleSize =1;
 //        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.example1, options);
-//        bitmap = Tools.rotateBitmap(bitmap,90);
+//        bitmap = ImageProcessingTools.rotateBitmap(bitmap,90);
 
         Utils.bitmapToMat(bitmap, img);
 
@@ -293,9 +310,7 @@ public class MainActivity extends AppCompatActivity
 //        }
 
         Utils.matToBitmap(croppedImg, bitmap);
-        selectorView.setImageBitmap(bitmap);
-        button_capture.setText(detectText(bitmap));
-
+        return bitmap;
     }
 
     private Mat RotateAndCrop(@NonNull Mat src)
@@ -393,11 +408,13 @@ public class MainActivity extends AppCompatActivity
             e.printStackTrace();
         }
         tessBaseAPI.setImage(bitmap);
-        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789+=-/x*");
-        String extractedText = tessBaseAPI.getUTF8Text();
+        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789+=()-/x*");
+//        String extractedText = tessBaseAPI.getUTF8Text();
+        String extractedBoxText = tessBaseAPI.getBoxText(0);
 
+        tessBaseAPI.clear();
         tessBaseAPI.end();
-        return extractedText;
+        return extractedBoxText;
 
     }
 
