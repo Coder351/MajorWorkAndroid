@@ -272,7 +272,10 @@ public class MainActivity extends AppCompatActivity
     public void extractText(Bitmap bitmap)
     {
         bitmap = preprocess(bitmap);
-
+        if (bitmap == null)
+        {
+            return;
+        }
         String detectedTextBoxes = detectText(bitmap);
         String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes, new android.util.Size(bitmap.getWidth(), bitmap.getHeight()));
         if (infixEquation == null || infixEquation.isEmpty())
@@ -306,7 +309,8 @@ public class MainActivity extends AppCompatActivity
         Mat croppedImg = rotateAndCrop(img);
         if (croppedImg == null)
         {
-            Toast.makeText(getApplicationContext(),"No equation detected. Please try again in better ligthing",Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "No equation detected. Please try again in better ligthing", Toast.LENGTH_SHORT).show();
+            return null;
         }
         bitmap = Bitmap.createBitmap(croppedImg.cols(), croppedImg.rows(), Bitmap.Config.ARGB_8888);
 
