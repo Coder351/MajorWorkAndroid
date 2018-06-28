@@ -9,13 +9,14 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Stack;
 
 public class EquationTools
 {
 
-
+    public final String ERROR_NOT_VALID_EQUATION = "notValidEquationError";
     private static String[] getTextArray(String detectedTextBoxes)
     {
         return detectedTextBoxes.split("\n");
@@ -23,6 +24,10 @@ public class EquationTools
 
     private static ArrayList<EquationCharacter> getEquationFromBoxes(String detectedTextBoxes)
     {
+        if(detectedTextBoxes.isEmpty())
+        {
+            return null;
+        }
         String[] detectedTextArray = getTextArray(detectedTextBoxes);
         ArrayList<EquationCharacter> equationArray = new ArrayList<EquationCharacter>();
         for (String character : detectedTextArray)
@@ -57,10 +62,17 @@ public class EquationTools
     public static String standardizeEquationToInfix(String rawCameraText, Size imageBounds)
     {
         ArrayList<EquationCharacter> equationArray = getEquationFromBoxes(rawCameraText);
-        StringBuilder builder = new StringBuilder();
-        for (EquationCharacter character : equationArray)
+        if (equationArray == null)
         {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder();
+        Boolean previousIsExponent = false;
+        for (int i = 0;i< equationArray.size();i++)
+        {
+            EquationCharacter character = equationArray.get(i);
             String element = character.getCharacter();
+            Boolean isExponent = false;
             if (element.equals("~"))
             {
                 continue;
@@ -69,14 +81,20 @@ public class EquationTools
             if (character.getRight() >= 2 * imageBounds.getHeight() / 3)
             {
                 element = " ^ " + element;
+                isExponent = true;
             }
 
             if (isOperator(character.getCharacter()))
             {
                 element = " " + element + " ";
             }
-            builder.append(element);
+            if((isOperator(character.getCharacter())||isExponent) && (isOperator(equationArray.get(Math.max(i-1,0)).getCharacter()) ||previousIsExponent|| i==0 || i == equationArray.size()-1))
+            {
+                return null;
+            }
 
+            builder.append(element);
+            previousIsExponent = isExponent;
         }
 
         builder = new StringBuilder(builder.toString().trim());
@@ -111,10 +129,10 @@ public class EquationTools
             {
                 builder.append("* "); //	fix ...)(... to ...)*(...
             }
-            if ((i == 0 || (i > 0 && !isNum(Character.toString(rawEquation.charAt(i - 1))))) && rawEquation.charAt(i) == '-' && isNum(Character.toString(rawEquation.charAt(i + 1))))
-            {
-                builder.append("~"); // check so am
-            }
+//            if ((i == 0 || (i > 0 && !isNum(Character.toString(rawEquation.charAt(i - 1))))) && rawEquation.charAt(i) == '-' && isNum(Character.toString(rawEquation.charAt(i + 1))))
+//            {
+//                builder.append("~"); // check so am
+//            }
             if (i > 0 && ((rawEquation.charAt(i - 1) == '(' && isNum(Character.toString(rawEquation.charAt(i)))) || (rawEquation.charAt(i) == ')' && isNum(Character.toString(rawEquation.charAt(i - 1))))))
             {
                 builder.append(" ");
@@ -123,7 +141,43 @@ public class EquationTools
             builder.append(rawEquation.charAt(i));
         }
 
+        if(!checkValidEquation(builder.toString()))
+        {
+            return "";
+        }
+
         return builder.toString();
+    }
+
+    private static boolean checkValidEquation(String equation)
+    {
+        if(equation.isEmpty())
+        {
+            return false;
+        }
+        if (!(equation.contains("+")
+                || equation.contains("-")
+                || equation.contains("*")
+                || equation.contains("/")
+                || equation.contains("x")
+                || equation.contains("^")))
+        {
+            return false;
+        }
+        if (!(equation.contains("0")
+                || equation.contains("1")
+                || equation.contains("2")
+                || equation.contains("3")
+                || equation.contains("4")
+                || equation.contains("5")
+                || equation.contains("6")
+                || equation.contains("7")
+                || equation.contains("8")
+                || equation.contains("9")))
+        {
+            return false;
+        }
+        return true;
     }
 
     private static Boolean isLParenthesis(String element)
@@ -229,49 +283,57 @@ public class EquationTools
     {
         Stack<Double> stack = new Stack<>();
 
-        for (String element : postfix)
+        Double answer = null;
+        try
         {
-            if (isNum(element))
+            for (String element : postfix)
             {
-                stack.push(Double.parseDouble(element));
-            }
-            else
-            {
-                Double num2 = stack.peek();
-                stack.pop();
-                Double num1 = stack.peek();
-                stack.pop();
-                switch (element)
+                if (isNum(element))
                 {
-                    case "+":
-                        stack.push(num1 + num2);
-                        break;
-                    case "-":
-                        stack.push(num1 - num2);
-                        break;
-                    case "*":
-                    case "x":
-                        stack.push(num1 * num2);
-                        break;
-                    case "/":
-                        stack.push(num1 / num2);
-                        break;
-                    case "^":
-                        stack.push(Math.pow(num1, num2));
-                        break;
-                    default:
-                        stack.push(num2);
-                        stack.push(num1);
-                        Log.d("TAGAA postfix operation", "error with operator/unkiwn element: " + element);
+                    stack.push(Double.parseDouble(element));
+                }
+                else
+                {
+                    Double num2 = stack.peek();
+                    stack.pop();
+                    Double num1 = stack.peek();
+                    stack.pop();
+                    switch (element)
+                    {
+                        case "+":
+                            stack.push(num1 + num2);
+                            break;
+                        case "-":
+                            stack.push(num1 - num2);
+                            break;
+                        case "*":
+                        case "x":
+                            stack.push(num1 * num2);
+                            break;
+                        case "/":
+                            stack.push(num1 / num2);
+                            break;
+                        case "^":
+                            stack.push(Math.pow(num1, num2));
+                            break;
+                        default:
+                            stack.push(num2);
+                            stack.push(num1);
+                            Log.d("TAGAA postfix operation", "error with operator/unkown element: " + element);
 
+                    }
                 }
             }
+            answer = stack.peek();
+            stack.pop();
+            if (!stack.empty())
+            {
+                Log.d("TAGA postfix operation", "error with multiple answers!");
+            }
         }
-        Double answer = stack.peek();
-        stack.pop();
-        if (!stack.empty())
+        catch (EmptyStackException e)
         {
-            Log.d("TAGA postfix operation", "error with multiple answers!");
+            e.printStackTrace();
         }
 
         if (answer == Math.rint(answer))

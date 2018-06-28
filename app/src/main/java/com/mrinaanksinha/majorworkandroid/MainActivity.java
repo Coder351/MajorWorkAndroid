@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -28,7 +27,6 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Rect;
 import org.opencv.core.RotatedRect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -42,14 +40,13 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 //TODO: ensure that if permissions not present, appropriate screen shown after permissions entered
 public class MainActivity extends AppCompatActivity
 {
 
     public Mat img;
-    private final String TESS_DATA_PATH ="/tessdata";
+    private final String TESS_DATA_PATH = "/tessdata";
     private TessBaseAPI tessBaseAPI;
     private FocusBox focusBox;
 
@@ -105,7 +102,7 @@ public class MainActivity extends AppCompatActivity
             }
 
             Bitmap bmp = ImageProcessingTools.getCroppedBitmap(pictureFile.getAbsolutePath(), preview.getWidth(), preview.getHeight(), focusBox.getSelectorViewBox());
-            ExtractText(bmp);
+            extractText(bmp);
 
             Log.d("TAG", "IMAGE LOADED");
         }
@@ -171,7 +168,7 @@ public class MainActivity extends AppCompatActivity
 
         prepareTessData();
         selectorView = (ImageView) findViewById(R.id.selectorView);
-        focusBox = new FocusBox(getApplicationContext(),selectorView);
+        focusBox = new FocusBox(getApplicationContext(), selectorView);
         camera = getCameraInstance(getApplicationContext());
 
         preview = new CameraPreview(this, camera, this);
@@ -192,8 +189,6 @@ public class MainActivity extends AppCompatActivity
                 camera.takePicture(null, null, pictureCallback);
             }
         });
-
-
 
 
     }
@@ -274,13 +269,17 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    public void ExtractText(Bitmap bitmap)
+    public void extractText(Bitmap bitmap)
     {
         bitmap = preprocess(bitmap);
 
         String detectedTextBoxes = detectText(bitmap);
-
-        String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes,new android.util.Size(bitmap.getWidth(),bitmap.getHeight()));
+        String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes, new android.util.Size(bitmap.getWidth(), bitmap.getHeight()));
+        if (infixEquation == null || infixEquation.isEmpty())
+        {
+            Toast.makeText(getApplicationContext(), "Error: please take another image. Read \"how to capture\" for help", Toast.LENGTH_SHORT).show();
+            return;
+        }
         ArrayList<String> postfixEquation = EquationTools.infixToPostfix(infixEquation);
         String equationSolution = EquationTools.solvePostfix(postfixEquation);
         String formattedEquationWSolution = infixEquation + " = " + equationSolution;
@@ -302,9 +301,13 @@ public class MainActivity extends AppCompatActivity
         Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
         Imgproc.GaussianBlur(img, img, new Size(3, 3), 0);
         Imgproc.adaptiveThreshold(img, img, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 55, 10);
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE,new Size(2,2));
-        Imgproc.morphologyEx(img,img, Imgproc.MORPH_ERODE,kernel);
-        Mat croppedImg = RotateAndCrop(img);
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2, 2));
+        Imgproc.morphologyEx(img, img, Imgproc.MORPH_ERODE, kernel);
+        Mat croppedImg = rotateAndCrop(img);
+        if (croppedImg == null)
+        {
+            Toast.makeText(getApplicationContext(),"No equation detected. Please try again in better ligthing",Toast.LENGTH_SHORT).show();
+        }
         bitmap = Bitmap.createBitmap(croppedImg.cols(), croppedImg.rows(), Bitmap.Config.ARGB_8888);
 
 //        }
@@ -313,7 +316,7 @@ public class MainActivity extends AppCompatActivity
         return bitmap;
     }
 
-    private Mat RotateAndCrop(@NonNull Mat src)
+    private Mat rotateAndCrop(@NonNull Mat src)
     {
         RotatedRect rect;
         Mat points = Mat.zeros(src.size(), src.channels());
@@ -322,26 +325,32 @@ public class MainActivity extends AppCompatActivity
         MatOfPoint mpoints = new MatOfPoint(points);
         MatOfPoint2f points2f = new MatOfPoint2f(mpoints.toArray()); //TAKES WAY TOO LONGGGGG!!!!!!!
 
-//        if (points2f.rows() > 0) {
-        rect = Imgproc.minAreaRect(points2f);
-        double angle = rect.angle;
-        Size croppedSize;
-        if (rect.angle < -45.0)
+        if (points2f.rows() > 0)
         {
-            angle += 90;
-            croppedSize = new Size(rect.size.height, rect.size.width);
+            rect = Imgproc.minAreaRect(points2f);
+            double angle = rect.angle;
+            Size croppedSize;
+            if (rect.angle < -45.0)
+            {
+                angle += 90;
+                croppedSize = new Size(rect.size.height, rect.size.width);
+            }
+            else
+            {
+                croppedSize = rect.size;
+            }
+
+            Mat rotMat = Imgproc.getRotationMatrix2D(rect.center, angle, 1);
+            Mat rotated = new Mat();
+            Imgproc.warpAffine(src, rotated, rotMat, new Size(src.width(), src.height()), Imgproc.INTER_CUBIC);
+            Mat cropped = new Mat();
+            Imgproc.getRectSubPix(rotated, croppedSize, rect.center, cropped);
+            return cropped;
         }
         else
         {
-            croppedSize = rect.size;
+            return null;
         }
-
-        Mat rotMat = Imgproc.getRotationMatrix2D(rect.center, angle, 1);
-        Mat rotated = new Mat();
-        Imgproc.warpAffine(src, rotated, rotMat, new Size(src.width(), src.height()), Imgproc.INTER_CUBIC);
-        Mat cropped = new Mat();
-        Imgproc.getRectSubPix(rotated, croppedSize, rect.center, cropped);
-        return cropped;
     }
 
     private void prepareTessData()
@@ -396,12 +405,11 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
     private String detectText(Bitmap bitmap)
     {
         try
         {
-            tessBaseAPI.init(getFilesDir().toString(),"eng");
+            tessBaseAPI.init(getFilesDir().toString(), "eng");
         }
         catch (Exception e)
         {
