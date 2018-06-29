@@ -196,9 +196,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     {
         Camera.Parameters parameters = camera.getParameters();
         parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-        List<Camera.Area> areas = new ArrayList<>();
-        areas.add(new Camera.Area(box, 1000));
-        parameters.setFocusAreas(areas);
+//        List<Camera.Area> areas = new ArrayList<>();
+//        areas.add(new Camera.Area(box, 1000));
+//        parameters.setFocusAreas(areas);
         camera.setParameters(parameters);
     }
 

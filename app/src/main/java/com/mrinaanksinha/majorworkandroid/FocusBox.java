@@ -244,5 +244,6 @@ public class FocusBox extends View
         canvas.drawRect(selectorView.getRight() - 4 * RECTANGLE_THICKNESS, selectorView.getBottom() - RECTANGLE_THICKNESS, selectorView.getRight(), selectorView.getBottom(), paint);
 
 
+
     }
 }

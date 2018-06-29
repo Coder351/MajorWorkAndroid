@@ -163,7 +163,6 @@ public class MainActivity extends AppCompatActivity
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            return;
         }
 
         prepareTessData();
@@ -200,22 +199,34 @@ public class MainActivity extends AppCompatActivity
         releaseCamera();
     }
 
-//    @Override
-//    protected void onResume()
-//    {
-//        super.onResume();
-//        if (camera == null)
-//        {
-//            camera = getCameraInstance(getApplicationContext());
-//            CameraPreview.setCameraDisplayOrientation(this, Camera.CameraInfo.CAMERA_FACING_BACK, camera);
-//        }
-//    }
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        if (camera == null)
+        {
+            camera = getCameraInstance(getApplicationContext());
+        }
+        if (preview == null)
+        {
+            preview = new CameraPreview(this, camera, this);
+            preview.initFocus(focusBox.getSelectorViewBox());
+            previewFrame = (FrameLayout) findViewById(R.id.cameraPreviewFrame);
+            previewFrame.addView(preview);
+            focusBox.bringToFront();
+        }
+    }
 
     private void releaseCamera()
     {
-        if (camera != null)
+        if (preview !=null)
         {
             preview.removeFocusCallback();
+            previewFrame.removeView(preview);
+            preview = null;
+        }
+        if (camera != null)
+        {
             camera.release();
             camera = null;
         }
@@ -241,6 +252,7 @@ public class MainActivity extends AppCompatActivity
         {
             e.printStackTrace();
         }
+        Log.e(">>>>>>>", cam == null ? "cam = null" : "cam =/= null");
         return cam; // returns null if camera is unavailable
     }
 
