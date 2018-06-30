@@ -5,7 +5,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +19,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
@@ -49,7 +54,7 @@ public class MainActivity extends AppCompatActivity
     private final String TESS_DATA_PATH = "/tessdata";
     private TessBaseAPI tessBaseAPI;
     private FocusBox focusBox;
-
+    private ProgressBar progressBar;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
@@ -78,6 +83,10 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onPictureTaken(byte[] data, Camera camera)
         {
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.bringToFront();
+            button_capture.setEnabled(false);
+            focusBox.setEnabled(false);
             File pictureFile = getOutputMediaFile();
             long x = pictureFile.length();
             if (pictureFile == null)
@@ -102,7 +111,21 @@ public class MainActivity extends AppCompatActivity
             }
 
             Bitmap bmp = ImageProcessingTools.getCroppedBitmap(pictureFile.getAbsolutePath(), preview.getWidth(), preview.getHeight(), focusBox.getSelectorViewBox());
-            extractText(bmp);
+
+
+            ExtractText extractText = new ExtractText();
+            extractText.delegate = new AsyncResponse()
+            {
+                @Override
+                public void processFinish()
+                {
+                    progressBar.setVisibility(View.INVISIBLE);
+                    button_capture.setEnabled(true);
+                    focusBox.setEnabled(true);
+                }
+            };
+
+            extractText.execute(bmp);
 
             Log.d("TAG", "IMAGE LOADED");
         }
@@ -175,7 +198,10 @@ public class MainActivity extends AppCompatActivity
         previewFrame = (FrameLayout) findViewById(R.id.cameraPreviewFrame);
         previewFrame.addView(preview);
         previewFrame.addView(focusBox);
-//
+
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        progressBar.setVisibility(View.INVISIBLE);
+
 //        textureView = (TextureView) findViewById(R.id.textureview);
 //        textureView.setSurfaceTextureListener(surfaceTextureListener);
         button_capture = (Button) findViewById(R.id.button_capture);
@@ -188,6 +214,7 @@ public class MainActivity extends AppCompatActivity
                 camera.takePicture(null, null, pictureCallback);
             }
         });
+
 
 
     }
@@ -280,95 +307,6 @@ public class MainActivity extends AppCompatActivity
         return mediaFile;
     }
 
-
-    public void extractText(Bitmap bitmap)
-    {
-        bitmap = preprocess(bitmap);
-        if (bitmap == null)
-        {
-            return;
-        }
-        String detectedTextBoxes = detectText(bitmap);
-        String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes, new android.util.Size(bitmap.getWidth(), bitmap.getHeight()));
-        if (infixEquation == null || infixEquation.isEmpty())
-        {
-            Toast.makeText(getApplicationContext(), "Error: please take another image. Read \"how to capture\" for help", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        ArrayList<String> postfixEquation = EquationTools.infixToPostfix(infixEquation);
-        String equationSolution = EquationTools.solvePostfix(postfixEquation);
-        String formattedEquationWSolution = infixEquation + " = " + equationSolution;
-
-        button_capture.setText(formattedEquationWSolution);
-
-
-    }
-
-    private Bitmap preprocess(Bitmap bitmap)
-    {
-        //        BitmapFactory.Options options = new BitmapFactory.Options();
-//        options.inSampleSize =1;
-//        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.example1, options);
-//        bitmap = ImageProcessingTools.rotateBitmap(bitmap,90);
-
-        Utils.bitmapToMat(bitmap, img);
-
-        Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.GaussianBlur(img, img, new Size(3, 3), 0);
-        Imgproc.adaptiveThreshold(img, img, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 55, 10);
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2, 2));
-        Imgproc.morphologyEx(img, img, Imgproc.MORPH_ERODE, kernel);
-        Mat croppedImg = rotateAndCrop(img);
-        if (croppedImg == null)
-        {
-            Toast.makeText(getApplicationContext(), "No equation detected. Please try again in better ligthing", Toast.LENGTH_SHORT).show();
-            return null;
-        }
-        bitmap = Bitmap.createBitmap(croppedImg.cols(), croppedImg.rows(), Bitmap.Config.ARGB_8888);
-
-//        }
-
-        Utils.matToBitmap(croppedImg, bitmap);
-        return bitmap;
-    }
-
-    private Mat rotateAndCrop(@NonNull Mat src)
-    {
-        RotatedRect rect;
-        Mat points = Mat.zeros(src.size(), src.channels());
-        Core.findNonZero(src, points);
-
-        MatOfPoint mpoints = new MatOfPoint(points);
-        MatOfPoint2f points2f = new MatOfPoint2f(mpoints.toArray()); //TAKES WAY TOO LONGGGGG!!!!!!!
-
-        if (points2f.rows() > 0)
-        {
-            rect = Imgproc.minAreaRect(points2f);
-            double angle = rect.angle;
-            Size croppedSize;
-            if (rect.angle < -45.0)
-            {
-                angle += 90;
-                croppedSize = new Size(rect.size.height, rect.size.width);
-            }
-            else
-            {
-                croppedSize = rect.size;
-            }
-
-            Mat rotMat = Imgproc.getRotationMatrix2D(rect.center, angle, 1);
-            Mat rotated = new Mat();
-            Imgproc.warpAffine(src, rotated, rotMat, new Size(src.width(), src.height()), Imgproc.INTER_CUBIC);
-            Mat cropped = new Mat();
-            Imgproc.getRectSubPix(rotated, croppedSize, rect.center, cropped);
-            return cropped;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
     private void prepareTessData()
     {
 
@@ -420,28 +358,138 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-
-    private String detectText(Bitmap bitmap)
-    {
-        try
-        {
-            tessBaseAPI.init(getFilesDir().toString(), "eng");
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        tessBaseAPI.setImage(bitmap);
-        tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789+=()-/x*");
-//        String extractedText = tessBaseAPI.getUTF8Text();
-        String extractedBoxText = tessBaseAPI.getBoxText(0);
-
-        tessBaseAPI.clear();
-        tessBaseAPI.end();
-        return extractedBoxText;
-
+    Handler extractTextHandler = new Handler(Looper.getMainLooper()) {
+    @Override
+    public void handleMessage(Message message) {
+        Toast.makeText(getApplicationContext(), (String) message.obj,Toast.LENGTH_SHORT).show();
     }
+};
 
+
+    private class ExtractText extends AsyncTask<Bitmap,Void,Void>
+    {
+
+        public AsyncResponse delegate = null;
+        @Override
+        protected Void doInBackground(Bitmap... bitmaps)
+        {
+            Bitmap bitmap = bitmaps[0];
+            bitmap = preprocess(bitmap);
+            if (bitmap == null)
+            {
+                return null;
+            }
+            String detectedTextBoxes = detectText(bitmap);
+            String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes, new android.util.Size(bitmap.getWidth(), bitmap.getHeight()));
+            if (infixEquation == null || infixEquation.isEmpty())
+            {
+                Message message = extractTextHandler.obtainMessage(0,"Error: please take another image. Read \"how to capture\" for help");
+                message.sendToTarget();
+                return null;
+            }
+            ArrayList<String> postfixEquation = EquationTools.infixToPostfix(infixEquation);
+            String equationSolution = EquationTools.solvePostfix(postfixEquation);
+            String formattedEquationWSolution = infixEquation + " = " + equationSolution;
+
+            button_capture.setText(formattedEquationWSolution);
+
+            return null;
+        }
+
+        private Bitmap preprocess(Bitmap bitmap)
+        {
+            //        BitmapFactory.Options options = new BitmapFactory.Options();
+//        options.inSampleSize =1;
+//        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.example1, options);
+//        bitmap = ImageProcessingTools.rotateBitmap(bitmap,90);
+
+            Utils.bitmapToMat(bitmap, img);
+
+            Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
+            Imgproc.GaussianBlur(img, img, new Size(3, 3), 0);
+            Imgproc.adaptiveThreshold(img, img, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 55, 10);
+            Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2, 2));
+            Imgproc.morphologyEx(img, img, Imgproc.MORPH_ERODE, kernel);
+            Mat croppedImg = rotateAndCrop(img);
+            if (croppedImg == null)
+            {
+                Message message = extractTextHandler.obtainMessage(0,"No equation detected. Please try again in better lighting.");
+                message.sendToTarget();
+                return null;
+            }
+            bitmap = Bitmap.createBitmap(croppedImg.cols(), croppedImg.rows(), Bitmap.Config.ARGB_8888);
+
+//        }
+
+            Utils.matToBitmap(croppedImg, bitmap);
+            return bitmap;
+        }
+
+        private Mat rotateAndCrop(@NonNull Mat src)
+        {
+            RotatedRect rect;
+            Mat points = Mat.zeros(src.size(), src.channels());
+            Core.findNonZero(src, points);
+
+            MatOfPoint mpoints = new MatOfPoint(points);
+            MatOfPoint2f points2f = new MatOfPoint2f(mpoints.toArray()); //TAKES WAY TOO LONGGGGG!!!!!!!
+
+            if (points2f.rows() > 0)
+            {
+                rect = Imgproc.minAreaRect(points2f);
+                double angle = rect.angle;
+                Size croppedSize;
+                if (rect.angle < -45.0)
+                {
+                    angle += 90;
+                    croppedSize = new Size(rect.size.height, rect.size.width);
+                }
+                else
+                {
+                    croppedSize = rect.size;
+                }
+
+                Mat rotMat = Imgproc.getRotationMatrix2D(rect.center, angle, 1);
+                Mat rotated = new Mat();
+                Imgproc.warpAffine(src, rotated, rotMat, new Size(src.width(), src.height()), Imgproc.INTER_CUBIC);
+                Mat cropped = new Mat();
+                Imgproc.getRectSubPix(rotated, croppedSize, rect.center, cropped);
+                return cropped;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+
+        private String detectText(Bitmap bitmap)
+        {
+            try
+            {
+                tessBaseAPI.init(getFilesDir().toString(), "eng");
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            tessBaseAPI.setImage(bitmap);
+            tessBaseAPI.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789+=()-/x*");
+//        String extractedText = tessBaseAPI.getUTF8Text();
+            String extractedBoxText = tessBaseAPI.getBoxText(0);
+
+            tessBaseAPI.clear();
+            tessBaseAPI.end();
+            return extractedBoxText;
+
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid)
+        {
+            delegate.processFinish();
+        }
+    }
 
 }
 
