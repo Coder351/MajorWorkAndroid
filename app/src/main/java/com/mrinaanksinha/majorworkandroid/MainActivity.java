@@ -20,6 +20,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
@@ -55,7 +56,7 @@ public class MainActivity extends AppCompatActivity
     private TessBaseAPI tessBaseAPI;
     private FocusBox focusBox;
     private ProgressBar progressBar;
-
+    private TextView resultsTextView;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
         @Override
@@ -200,11 +201,11 @@ public class MainActivity extends AppCompatActivity
         previewFrame.addView(focusBox);
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        progressBar.setVisibility(View.INVISIBLE);
+        resultsTextView = (TextView) findViewById(R.id.resultsTextView);
 
 //        textureView = (TextureView) findViewById(R.id.textureview);
 //        textureView.setSurfaceTextureListener(surfaceTextureListener);
-        button_capture = (Button) findViewById(R.id.button_capture);
+        button_capture = (Button) findViewById(R.id.captureButton);
         button_capture.setOnClickListener(new View.OnClickListener()
         {
             @Override
@@ -214,7 +215,6 @@ public class MainActivity extends AppCompatActivity
                 camera.takePicture(null, null, pictureCallback);
             }
         });
-
 
 
     }
@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity
 
     private void releaseCamera()
     {
-        if (preview !=null)
+        if (preview != null)
         {
             preview.removeFocusCallback();
             previewFrame.removeView(preview);
@@ -358,18 +358,21 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    Handler extractTextHandler = new Handler(Looper.getMainLooper()) {
-    @Override
-    public void handleMessage(Message message) {
-        Toast.makeText(getApplicationContext(), (String) message.obj,Toast.LENGTH_SHORT).show();
-    }
-};
+    Handler extractTextHandler = new Handler(Looper.getMainLooper())
+    {
+        @Override
+        public void handleMessage(Message message)
+        {
+            Toast.makeText(getApplicationContext(), (String) message.obj, Toast.LENGTH_SHORT).show();
+        }
+    };
 
 
-    private class ExtractText extends AsyncTask<Bitmap,Void,Void>
+    private class ExtractText extends AsyncTask<Bitmap, Void, Void>
     {
 
         public AsyncResponse delegate = null;
+
         @Override
         protected Void doInBackground(Bitmap... bitmaps)
         {
@@ -383,7 +386,7 @@ public class MainActivity extends AppCompatActivity
             String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes, new android.util.Size(bitmap.getWidth(), bitmap.getHeight()));
             if (infixEquation == null || infixEquation.isEmpty())
             {
-                Message message = extractTextHandler.obtainMessage(0,"Error: please take another image. Read \"how to capture\" for help");
+                Message message = extractTextHandler.obtainMessage(0, "Error: please take another image. Read \"how to capture\" for help");
                 message.sendToTarget();
                 return null;
             }
@@ -391,7 +394,7 @@ public class MainActivity extends AppCompatActivity
             String equationSolution = EquationTools.solvePostfix(postfixEquation);
             String formattedEquationWSolution = infixEquation + " = " + equationSolution;
 
-            button_capture.setText(formattedEquationWSolution);
+            resultsTextView.setText(formattedEquationWSolution);
 
             return null;
         }
@@ -413,7 +416,7 @@ public class MainActivity extends AppCompatActivity
             Mat croppedImg = rotateAndCrop(img);
             if (croppedImg == null)
             {
-                Message message = extractTextHandler.obtainMessage(0,"No equation detected. Please try again in better lighting.");
+                Message message = extractTextHandler.obtainMessage(0, "No equation detected. Please try again in better lighting.");
                 message.sendToTarget();
                 return null;
             }
