@@ -83,15 +83,28 @@ public class EquationTools
             }
             if (character.getRight() >= 2 * imageBounds.getHeight() / 3)
             {
-                element = " ^ " + element;
+                if (!previousIsExponent)//
+                {//
+                    element = " ^ ( " + element;//
+                }//
                 isExponent = true;
             }
-
+            if (!isExponent && previousIsExponent)//
+            {//
+                element += " ) ";//
+            }//
             if (isOperator(character.getCharacter()))
             {
-                element = " " + element + " ";
+                if (!isExponent && previousIsExponent)//
+                {//
+                    element = element+ " ";//
+                }//
+                else//
+                {//
+                    element = " " + element + " ";
+                }//
             }
-            if ((isOperator(character.getCharacter()) || isExponent) && (isOperator(equationArray.get(Math.max(i - 1, 0)).getCharacter()) || previousIsExponent || i == 0 || i == equationArray.size() - 1))
+            if ((isOperator(character.getCharacter()) || isExponent) && (isOperator(equationArray.get(Math.max(i - 1, 0)).getCharacter()) || (previousIsExponent && !isExponent)|| i == 0 || i == equationArray.size() - 1))//
             {
                 return null;
             }
@@ -128,7 +141,7 @@ public class EquationTools
 
         for (int i = 0; i < rawEquation.length(); i++)
         {
-            if (i > 0 && isLParenthesis(Character.toString(rawEquation.charAt(i))) && (rawEquation.charAt(i - 1) == ')' || isNum(Character.toString(rawEquation.charAt(i - 1)))))
+            if (i > 0 && (isLParenthesis(Character.toString(rawEquation.charAt(i))) && (rawEquation.charAt(i - 1) == ')' || isNum(Character.toString(rawEquation.charAt(i - 1)))))||(isNum(Character.toString(rawEquation.charAt(i))) && rawEquation.charAt(i-1) == ')'))//last part changed
             {
                 builder.append("* "); //	fix ...)(... to ...)*(...
             }
