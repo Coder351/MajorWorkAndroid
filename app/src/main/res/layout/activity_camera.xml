@@ -19,7 +19,12 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_gravity="center"
-        android:text="Capture" />
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="5dp"
+        android:text="Capture"
+        android:textSize="18sp" />
 
 
     <ImageView
@@ -42,7 +47,15 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/captureButton"
         android:layout_centerHorizontal="true"
-        android:text="" />
+        android:layout_marginBottom="5dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="20dp"
+        android:background="@color/ResultsBoxColor"
+        android:text="3 + 1 = 4"
+        android:textAlignment="center"
+        android:textColor="@android:color/black"
+        android:textSize="24sp" />
     <!--app:srcCompat="@mipmap/focus_box_image"-->
 
 </RelativeLayout>
