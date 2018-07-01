@@ -19,6 +19,7 @@ public class FocusBox extends View
     private final float RECTANGLE_THICKNESS = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
     private Paint paint;
     private ImageView selectorView;
+    public Boolean enabled = true;
 
     public FocusBox(Context context, ImageView _selectorView)
     {
@@ -47,7 +48,10 @@ public class FocusBox extends View
 //            {
 //                Toast.makeText(getContext(),"Please use a single finger to resize",Toast.LENGTH_SHORT).show();
 //            }
-
+            if(!enabled)
+            {
+                return true;
+            }
             switch (event.getAction())
             {
                 case MotionEvent.ACTION_DOWN:

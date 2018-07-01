@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity
             progressBar.setVisibility(View.VISIBLE);
             progressBar.bringToFront();
             button_capture.setEnabled(false);
-            focusBox.setEnabled(false);
+            focusBox.enabled = false;
             File pictureFile = getOutputMediaFile();
             long x = pictureFile.length();
             if (pictureFile == null)
@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity
                 {
                     progressBar.setVisibility(View.INVISIBLE);
                     button_capture.setEnabled(true);
-                    focusBox.setEnabled(true);
+                    focusBox.enabled = true;
                 }
             };
 
