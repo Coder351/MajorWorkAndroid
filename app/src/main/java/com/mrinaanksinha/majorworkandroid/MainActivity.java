@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity
         {
             progressBar.setVisibility(View.VISIBLE);
             progressBar.bringToFront();
-            button_capture.setEnabled(false);
+            captureButton.setEnabled(false);
             focusBox.enabled = false;
             File pictureFile = getOutputMediaFile();
             long x = pictureFile.length();
@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity
                 public void processFinish()
                 {
                     progressBar.setVisibility(View.INVISIBLE);
-                    button_capture.setEnabled(true);
+                    captureButton.setEnabled(true);
                     focusBox.enabled = true;
                 }
             };
@@ -132,13 +132,18 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
-    Button button_capture;
+    static Button captureButton;
     private static final int REQUEST_PERMISSIONS = 200;
 
     private ImageView selectorView;
     private Camera camera;
     private CameraPreview preview;
     private FrameLayout previewFrame;
+
+    public static Button getCaptureButton()
+    {
+        return captureButton;
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
@@ -205,8 +210,8 @@ public class MainActivity extends AppCompatActivity
 
 //        textureView = (TextureView) findViewById(R.id.textureview);
 //        textureView.setSurfaceTextureListener(surfaceTextureListener);
-        button_capture = (Button) findViewById(R.id.captureButton);
-        button_capture.setOnClickListener(new View.OnClickListener()
+        captureButton = (Button) findViewById(R.id.captureButton);
+        captureButton.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View v)

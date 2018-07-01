@@ -174,7 +174,7 @@ public class FocusBox extends View
         final int MIN_FOCUS_BOX_WIDTH = MainActivity.getProgressBar().getWidth();
         final int MIN_FOCUS_BOX_HEIGHT = MainActivity.getProgressBar().getHeight();
         final int MAX_FOCUS_BOX_WIDTH = (int) (this.getWidth() * 0.8);
-        final int MAX_FOCUS_BOX_HEIGHT = (int) (MAX_FOCUS_BOX_WIDTH / 2);
+        final int MAX_FOCUS_BOX_HEIGHT = Math.min((int) (MAX_FOCUS_BOX_WIDTH / 2), ((int) ((MainActivity.getCaptureButton().getTop() - 10) / 2)));
 
         int newLeft = selectorView.getLeft() - dW;
         int newRight = selectorView.getRight() + dW;
