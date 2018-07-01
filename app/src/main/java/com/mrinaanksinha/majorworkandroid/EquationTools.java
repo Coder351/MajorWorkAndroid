@@ -17,6 +17,7 @@ public class EquationTools
 {
 
     public final String ERROR_NOT_VALID_EQUATION = "notValidEquationError";
+
     private static String[] getTextArray(String detectedTextBoxes)
     {
         return detectedTextBoxes.split("\n");
@@ -24,7 +25,7 @@ public class EquationTools
 
     private static ArrayList<EquationCharacter> getEquationFromBoxes(String detectedTextBoxes)
     {
-        if(detectedTextBoxes.isEmpty())
+        if (detectedTextBoxes.isEmpty())
         {
             return null;
         }
@@ -42,7 +43,6 @@ public class EquationTools
     {
         return "+-/*x^".contains(testChar);
     }
-
 
 
     private static boolean isNum(String element)
@@ -68,7 +68,7 @@ public class EquationTools
         }
         StringBuilder builder = new StringBuilder();
         Boolean previousIsExponent = false;
-        for (int i = 0;i< equationArray.size();i++)
+        for (int i = 0; i < equationArray.size(); i++)
         {
             EquationCharacter character = equationArray.get(i);
             String element = character.getCharacter();
@@ -77,7 +77,10 @@ public class EquationTools
             {
                 continue;
             }
-
+            if (element.equals("="))
+            {
+                break;
+            }
             if (character.getRight() >= 2 * imageBounds.getHeight() / 3)
             {
                 element = " ^ " + element;
@@ -88,7 +91,7 @@ public class EquationTools
             {
                 element = " " + element + " ";
             }
-            if((isOperator(character.getCharacter())||isExponent) && (isOperator(equationArray.get(Math.max(i-1,0)).getCharacter()) ||previousIsExponent|| i==0 || i == equationArray.size()-1))
+            if ((isOperator(character.getCharacter()) || isExponent) && (isOperator(equationArray.get(Math.max(i - 1, 0)).getCharacter()) || previousIsExponent || i == 0 || i == equationArray.size() - 1))
             {
                 return null;
             }
@@ -141,7 +144,7 @@ public class EquationTools
             builder.append(rawEquation.charAt(i));
         }
 
-        if(!checkValidEquation(builder.toString()))
+        if (!checkValidEquation(builder.toString()))
         {
             return "";
         }
@@ -151,7 +154,7 @@ public class EquationTools
 
     private static boolean checkValidEquation(String equation)
     {
-        if(equation.isEmpty())
+        if (equation.isEmpty())
         {
             return false;
         }

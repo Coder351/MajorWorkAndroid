@@ -207,7 +207,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         @Override
         public void onAutoFocus(boolean success, Camera camera)
         {
-                camera.cancelAutoFocus();
+            camera.cancelAutoFocus();
         }
 
     };

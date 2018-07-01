@@ -23,14 +23,14 @@
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginTop="5dp"
-        android:text="Capture"
+        android:text="@string/CaptureButtonText"
         android:textSize="18sp" />
 
 
     <ImageView
         android:id="@+id/selectorView"
-        android:layout_width="400px"
-        android:layout_height="400px"
+        android:layout_width="187dp"
+        android:layout_height="75dp"
         android:layout_centerInParent="true"/>
 
     <ProgressBar

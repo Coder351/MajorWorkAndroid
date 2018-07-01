@@ -48,7 +48,7 @@ public class FocusBox extends View
 //            {
 //                Toast.makeText(getContext(),"Please use a single finger to resize",Toast.LENGTH_SHORT).show();
 //            }
-            if(!enabled)
+            if (!enabled)
             {
                 return true;
             }
@@ -160,7 +160,7 @@ public class FocusBox extends View
                     startX = -1;
                     startY = -1;
                     lastX = -1;
-                    lastY=-1;
+                    lastY = -1;
                     return true;
             }
             return false;
@@ -171,8 +171,10 @@ public class FocusBox extends View
 
     private void updateFocusBox(int dW, int dH)
     {
-        final int MIN_FOCUS_BOX_WIDTH = 300;
-        final int MIN_FOCUS_BOX_HEIGHT = 300;
+        final int MIN_FOCUS_BOX_WIDTH = MainActivity.getProgressBar().getWidth();
+        final int MIN_FOCUS_BOX_HEIGHT = MainActivity.getProgressBar().getHeight();
+        final int MAX_FOCUS_BOX_WIDTH = (int) (this.getWidth() * 0.8);
+        final int MAX_FOCUS_BOX_HEIGHT = (int) (MAX_FOCUS_BOX_WIDTH / 2);
 
         int newLeft = selectorView.getLeft() - dW;
         int newRight = selectorView.getRight() + dW;
@@ -181,10 +183,8 @@ public class FocusBox extends View
 
         if (newRight - newLeft < MIN_FOCUS_BOX_WIDTH
                 || newBottom - newTop < MIN_FOCUS_BOX_HEIGHT
-                || newLeft <=6
-                || newRight >= this.getWidth() - 6
-                || newTop <= 6
-                || newBottom >= this.getHeight() - 6)
+                || newRight - newLeft >= MAX_FOCUS_BOX_WIDTH
+                || newBottom - newTop >= MAX_FOCUS_BOX_HEIGHT)
         {
             return;
         }
@@ -246,7 +246,6 @@ public class FocusBox extends View
         canvas.drawRect(selectorView.getRight() - RECTANGLE_THICKNESS, selectorView.getTop(), selectorView.getRight(), selectorView.getBottom(), paint);
         canvas.drawRect(selectorView.getRight() - 4 * RECTANGLE_THICKNESS, selectorView.getTop(), selectorView.getRight(), selectorView.getTop() + RECTANGLE_THICKNESS, paint);
         canvas.drawRect(selectorView.getRight() - 4 * RECTANGLE_THICKNESS, selectorView.getBottom() - RECTANGLE_THICKNESS, selectorView.getRight(), selectorView.getBottom(), paint);
-
 
 
     }

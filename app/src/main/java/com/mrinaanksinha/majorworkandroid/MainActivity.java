@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity
     private final String TESS_DATA_PATH = "/tessdata";
     private TessBaseAPI tessBaseAPI;
     private FocusBox focusBox;
-    private ProgressBar progressBar;
+    private static ProgressBar progressBar;
     private TextView resultsTextView;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
@@ -150,7 +150,7 @@ public class MainActivity extends AppCompatActivity
 
             if (requestCode == REQUEST_PERMISSIONS)
             {
-                Toast.makeText(this, "You need to provide permissions to use the app.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.CameraPermissionRequired), Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -191,6 +191,7 @@ public class MainActivity extends AppCompatActivity
 
         prepareTessData();
         selectorView = (ImageView) findViewById(R.id.selectorView);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
         focusBox = new FocusBox(getApplicationContext(), selectorView);
         camera = getCameraInstance(getApplicationContext());
 
@@ -200,7 +201,6 @@ public class MainActivity extends AppCompatActivity
         previewFrame.addView(preview);
         previewFrame.addView(focusBox);
 
-        progressBar = (ProgressBar) findViewById(R.id.progressBar);
         resultsTextView = (TextView) findViewById(R.id.resultsTextView);
 
 //        textureView = (TextureView) findViewById(R.id.textureview);
@@ -272,7 +272,7 @@ public class MainActivity extends AppCompatActivity
         catch (RuntimeException e)
         {
             // Camera is not available (in use or does not exist)
-            Toast.makeText(context, "Camera in use by another application. Please close the camera before using this app.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.CameraInUse, Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
         catch (Exception e)
@@ -367,6 +367,11 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    public static ProgressBar getProgressBar()
+    {
+        return progressBar;
+    }
+
 
     private class ExtractText extends AsyncTask<Bitmap, Void, Void>
     {
@@ -386,7 +391,7 @@ public class MainActivity extends AppCompatActivity
             String infixEquation = EquationTools.standardizeEquationToInfix(detectedTextBoxes, new android.util.Size(bitmap.getWidth(), bitmap.getHeight()));
             if (infixEquation == null || infixEquation.isEmpty())
             {
-                Message message = extractTextHandler.obtainMessage(0, "Error: please take another image. Read \"how to capture\" for help");
+                Message message = extractTextHandler.obtainMessage(0, getString(R.string.EquationIsNullError));
                 message.sendToTarget();
                 return null;
             }
@@ -416,7 +421,7 @@ public class MainActivity extends AppCompatActivity
             Mat croppedImg = rotateAndCrop(img);
             if (croppedImg == null)
             {
-                Message message = extractTextHandler.obtainMessage(0, "No equation detected. Please try again in better lighting.");
+                Message message = extractTextHandler.obtainMessage(0, getString(R.string.BadLightingError));
                 message.sendToTarget();
                 return null;
             }
