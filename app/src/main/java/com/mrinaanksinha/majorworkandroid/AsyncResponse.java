@@ -2,5 +2,5 @@ package com.mrinaanksinha.majorworkandroid;
 
 public interface AsyncResponse
 {
-    void processFinish();
+    void processFinish(String result);
 }

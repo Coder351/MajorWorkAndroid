@@ -3,6 +3,6 @@
     <string name="BadLightingError">No equation detected. Please try again in better lighting.</string>
     <string name="CameraPermissionRequired">You need to provide permissions to use the app.</string>
     <string name="CameraInUse">Camera in use by another application. Please close the camera before using this app.</string>
-    <string name="EquationIsNullError">Error: please take another image. Read \"how to capture\" for help</string>
+    <string name="EquationIsNullError">No equation detected. Please take another image. Read \"how to capture\" for help</string>
     <string name="CaptureButtonText">Capture</string>
 </resources>
