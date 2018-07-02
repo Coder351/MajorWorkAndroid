@@ -118,11 +118,12 @@ public class MainActivity extends AppCompatActivity
             extractText.delegate = new AsyncResponse()
             {
                 @Override
-                public void processFinish()
+                public void processFinish(String result)
                 {
                     progressBar.setVisibility(View.INVISIBLE);
                     captureButton.setEnabled(true);
                     focusBox.enabled = true;
+                    resultsTextView.setText(result);
                 }
             };
 
@@ -378,13 +379,13 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private class ExtractText extends AsyncTask<Bitmap, Void, Void>
+    private class ExtractText extends AsyncTask<Bitmap, Void, String>
     {
 
         public AsyncResponse delegate = null;
 
         @Override
-        protected Void doInBackground(Bitmap... bitmaps)
+        protected String doInBackground(Bitmap... bitmaps)
         {
             Bitmap bitmap = bitmaps[0];
             bitmap = preprocess(bitmap);
@@ -404,9 +405,7 @@ public class MainActivity extends AppCompatActivity
             String equationSolution = EquationTools.solvePostfix(postfixEquation);
             String formattedEquationWSolution = infixEquation + " = " + equationSolution;
 
-            resultsTextView.setText(formattedEquationWSolution);
-
-            return null;
+            return formattedEquationWSolution;
         }
 
         private Bitmap preprocess(Bitmap bitmap)
@@ -498,9 +497,9 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onPostExecute(Void aVoid)
+        protected void onPostExecute(String result)
         {
-            delegate.processFinish();
+            delegate.processFinish(result);
         }
     }
 
